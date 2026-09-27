@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEGIS Trading Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="atmos"></div>
+<div id="labels"></div>
+
+<header class="hud-top">
+  <div class="brand">
+    <div class="logo-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" class="lm-o"/><circle cx="20" cy="20" r="11" class="lm-m"/><circle cx="20" cy="20" r="4.5" class="lm-i"/></svg></div>
+    <div>
+      <h1>AEGIS</h1>
+      <div class="sub">Autonomous systematic desk <span class="badge">Paper mode</span></div>
+    </div>
+  </div>
+  <div class="status-strip">
+    <div class="pill" id="mkt-pill"><i></i><span id="mkt-text">—</span></div>
+    <div class="pill" id="eng-pill"><i></i><span id="eng-text">—</span></div>
+    <div class="clock"><span id="clock">--:--:--</span><small>New York</small></div>
+  </div>
+  <nav class="controls">
+    <button id="btn-pause" title="Pause or resume the engine">⏸ Pause</button>
+    <button id="btn-rebal" title="Run the full strategy now and trade to target">⟳ Evaluate now</button>
+    <a id="btn-controls" class="btn-link" hidden target="_blank" rel="noopener" title="Evaluate, pause, resume or reset in GitHub Actions">⚙ Controls</a>
+    <button id="btn-dossier" title="Backtest results and how the strategy works">◈ Dossier</button>
+    <button id="btn-wall" class="primary" title="Fullscreen with cinematic camera">⛶ Wall mode</button>
+  </nav>
+</header>
+
+<main class="grid">
+  <!-- LEFT -->
+  <section class="col left">
+    <div class="panel hero">
+      <div class="panel-title"><span><span class="pid">01</span>Net liquidation value</span><span class="count">USD</span></div>
+      <div class="big" id="nav">$—</div>
+      <canvas id="spark" aria-label="Recent account value"></canvas>
+      <div class="row">
+        <div><div class="label">Today</div><div class="val" id="day-pl">—</div></div>
+        <div><div class="label">Since inception</div><div class="val" id="tot-pl">—</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span><span class="pid">02</span>Risk governor</span></div>
+      <div class="gauges">
+        <div class="gauge" id="g-exposure"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="42"/><circle class="arc" cx="50" cy="50" r="42"/></svg><div class="gv"><b>—</b><small>Exposure</small></div></div>
+        <div class="gauge" id="g-vol"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="42"/><circle class="arc" cx="50" cy="50" r="42"/></svg><div class="gv"><b>—</b><small>Forecast vol</small></div></div>
+        <div class="gauge" id="g-dd"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="42"/><circle class="arc" cx="50" cy="50" r="42"/></svg><div class="gv"><b>—</b><small>Drawdown</small></div></div>
+      </div>
+      <div class="breaker" id="breaker">Drawdown breaker: <b>ARMED</b></div>
+    </div>
+    <div class="panel grow">
+      <div class="panel-title"><span><span class="pid">03</span>Engine log</span><span class="live-dot" aria-hidden="true"></span></div>
+      <ul class="log" id="events"></ul>
+    </div>
+  </section>
+
+  <!-- CENTER -->
+  <section class="col center">
+    <div class="core-caption">
+      <div class="label"><span class="pid">04</span>Allocation core</div>
+      <div class="legend-classes">
+        <span><i style="--c:#7dd3fc"></i>Equities</span>
+        <span><i style="--c:#a5b4fc"></i>Bonds</span>
+        <span><i style="--c:#fcd08a"></i>Real assets</span>
+        <span><i style="--c:#94a3b8"></i>Safe harbor</span>
+      </div>
+      <div class="hint">Click an orbiting node to inspect it · drag to rotate</div>
+    </div>
+    <div class="panel chart-panel">
+      <div class="chart-head">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-view="live">Live paper</button>
+          <button class="tab" data-view="bt">Backtest 2007 → today</button>
+        </div>
+        <div class="chart-legend" id="chart-legend"></div>
+        <button class="mini" id="btn-table" title="Show data as a table">Table</button>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+        <canvas id="ddchart"></canvas>
+        <div class="tooltip" id="tip"></div>
+        <div class="chart-table" id="chart-table" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="col right">
+    <div class="panel">
+      <div class="panel-title"><span><span class="pid">05</span>Positions</span> <span class="count" id="pos-count"></span></div>
+      <table class="positions"><thead><tr><th>Asset</th><th>Qty</th><th>Value</th><th>Weight</th><th>Day</th></tr></thead><tbody id="positions"></tbody></table>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span><span class="pid">06</span>Momentum matrix</span> <span class="count" id="sig-asof"></span></div>
+      <div class="matrix" id="matrix"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span><span class="pid">07</span>Pullback sensors</span><span class="count">RSI-2</span></div>
+      <div class="rsi" id="rsi"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="tape">
+  <div class="telemetry">
+    <span class="tchip"><i></i>Feed <b id="t-feed">—</b></span>
+    <span class="tchip">Latency <b id="t-lat">—</b></span>
+    <span class="tchip">Next eval <b id="t-next">—</b></span>
+    <span class="tchip">Uptime <b id="t-up">—</b></span>
+    <span class="tchip">Marks <b id="t-pts">—</b></span>
+    <span class="tchip">Fills <b id="t-fills">—</b></span>
+  </div>
+  <div class="tape-tag">Tape</div>
+  <div class="tape-track"><div class="tape-inner" id="tape"></div></div>
+</footer>
+
+<div class="inspect" id="inspect" hidden></div>
+
+<div class="modal" id="dossier" hidden>
+  <div class="modal-box">
+    <button class="close" id="dossier-close" aria-label="Close">✕</button>
+    <h2>Strategy dossier</h2>
+    <div id="dossier-body">Loading…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
